@@ -6,7 +6,7 @@ import "./globals.css"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "VisBrain - AI Knowledge Assistant",
+  title: "Thinking-graph - AI Knowledge Assistant",
   description: "Interactive AI chatbot with 3D knowledge graph visualization",
     generator: 'v0.dev'
 }

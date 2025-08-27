@@ -25,7 +25,7 @@ export function EnhancedChatInterface({ onGraphUpdate }: EnhancedChatInterfacePr
     {
       id: "1",
       content:
-        "Hello! I'm VisBrain, your AI assistant. I help explore knowledge through conversations and build visual knowledge graphs. What would you like to learn about?",
+        "Hello! I'm thinking-graph, your AI assistant. I help explore knowledge through conversations and build visual knowledge graphs. What would you like to learn about?",
       role: "assistant",
       timestamp: new Date(),
     },
@@ -97,7 +97,7 @@ export function EnhancedChatInterface({ onGraphUpdate }: EnhancedChatInterfacePr
         
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
-          content: `I'm currently unable to connect to the AI backend. Error: ${backendError instanceof Error ? backendError.message : 'Unknown error'}. Please check if the Visbrain server is running on port 5001.`,
+          content: `I'm currently unable to connect to the AI backend. Error: ${backendError instanceof Error ? backendError.message : 'Unknown error'}. Please check if the thinking-graph server is running on port 5001.`,
           role: "assistant",
           timestamp: new Date(),
         }
@@ -121,7 +121,7 @@ export function EnhancedChatInterface({ onGraphUpdate }: EnhancedChatInterfacePr
       {
         id: "1",
         content:
-          "🆕 New conversation started! I'm VisBrain, your AI assistant. I help explore knowledge through conversations and build visual knowledge graphs. What would you like to learn about?",
+          "🆕 New conversation started! I'm thinking-graph, your AI assistant. I help explore knowledge through conversations and build visual knowledge graphs. What would you like to learn about?",
         role: "assistant",
         timestamp: new Date(),
       },
@@ -195,7 +195,7 @@ export function EnhancedChatInterface({ onGraphUpdate }: EnhancedChatInterfacePr
                 {!chatCollapsed && (
                   <div>
                     <h1 className="text-xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent drop-shadow-lg">
-                      VisBrain AI
+                      Thinking-graph AI
                     </h1>
                     <p className="text-sm text-white/80 font-medium">Knowledge Assistant</p>
                   </div>

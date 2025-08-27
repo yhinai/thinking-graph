@@ -7,8 +7,8 @@ from kgbuilder import AgentThinkingKG
 from agents.deepseek import get_reasoning_response
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from parent directory
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -210,8 +210,17 @@ if __name__ == '__main__':
     # Initialize the knowledge graph system
     init_kg_system()
     
-    # Get port from environment variable or default to 5001
-    port = int(os.environ.get('PORT', 5001))
+    # Get port from environment variable or default to 8000
+    port = int(os.environ.get('BACKEND_PORT', os.environ.get('PORT', 8000)))
     
-    # Run the Flask app
-    app.run(debug=True, host='0.0.0.0', port=port)
+    # Use Waitress production server
+    try:
+        from waitress import serve
+        print(f" * Running on all addresses (0.0.0.0)")
+        print(f" * Running on http://127.0.0.1:{port}")
+        print(f" * Running on http://192.0.0.2:{port}")
+        print(f" * Production server starting on port {port}")
+        serve(app, host='0.0.0.0', port=port)
+    except ImportError:
+        print("Waitress not installed, falling back to Flask dev server")
+        app.run(debug=False, host='0.0.0.0', port=port)

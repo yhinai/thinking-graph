@@ -3,8 +3,8 @@ import os
 import httpx
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from parent directory .env file
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env'))
 
 # Initialize OpenAI client with standard OpenAI API
 try:

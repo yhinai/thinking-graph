@@ -1,4 +1,4 @@
-# VisBrain Chatbot Frontend
+# Thinking-graph Chatbot Frontend
 
 ## Overview
 
@@ -8,7 +8,7 @@ A Next.js-based frontend application that provides an interactive chat interface
 
 - **Interactive Chat Interface**: Real-time messaging with AI assistant
 - **3D Knowledge Graph**: Visual representation of conversation data using force-directed graphs
-- **Backend Integration**: Seamless connection with Visbrain backend API
+- **Backend Integration**: Seamless connection with Thinking-graph backend API
 - **Real-time Updates**: Knowledge graph updates automatically as conversations progress
 - **Responsive Design**: Modern UI with Tailwind CSS and essential components
 - **Optimized Bundle**: Streamlined dependencies for fast loading
@@ -17,7 +17,7 @@ A Next.js-based frontend application that provides an interactive chat interface
 
 - Node.js 18+
 - npm or pnpm
-- Running Visbrain backend server
+- Running Thinking-graph backend server
 
 ## Setup
 
@@ -87,7 +87,7 @@ A Next.js-based frontend application that provides an interactive chat interface
 
 ## Usage
 
-1. **Start the Backend**: Ensure the Visbrain backend server is running on `http://localhost:5000`
+1. **Start the Backend**: Ensure the Thinking-graph backend server is running on `http://localhost:5000`
 
 2. **Open the Application**: Navigate to `http://localhost:3000`
 

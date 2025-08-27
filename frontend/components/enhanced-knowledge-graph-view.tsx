@@ -425,10 +425,10 @@ export function EnhancedKnowledgeGraphView() {
                   <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-400" />
                   <h3 className="text-lg font-semibold text-white mb-2">Backend Disconnected</h3>
                   <p className="text-white/70 mb-4">
-                Please start the Visbrain backend server to view the knowledge graph.
+                Please start the thinking-graph backend server to view the knowledge graph.
               </p>
                   <p className="text-sm text-white/60">
-                    Run: <code className="bg-white/10 px-2 py-1 rounded text-white/80">python app.py</code> in the Visbrain directory
+                    Run: <code className="bg-white/10 px-2 py-1 rounded text-white/80">python app.py</code> in the thinking-graph directory
               </p>
                 </div>
               </div>

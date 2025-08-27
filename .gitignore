@@ -114,9 +114,17 @@ dist/
 next-env.d.ts
 
 # === ENVIRONMENT & SECRETS ===
-.env*
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
 !.env.example
 *.pem
+
+# Local environment overrides
+frontend/.env.local
+backend/.env
 
 # === SYSTEM FILES ===
 # macOS

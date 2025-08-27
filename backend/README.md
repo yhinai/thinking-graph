@@ -1,8 +1,8 @@
-# Visbrain Backend
+# Thinking-graph Backend
 
 ## Overview
 
-The Visbrain backend is a Flask-based API server that processes thinking text and builds a knowledge graph using Neo4j. It integrates with Google's Gemini AI for natural language processing and provides REST endpoints for the frontend to interact with the knowledge graph data.
+The Thinking-graph backend is a Flask-based API server that processes thinking text and builds a knowledge graph using Neo4j. It integrates with Google's Gemini AI for natural language processing and provides REST endpoints for the frontend to interact with the knowledge graph data.
 
 ## Features
 
@@ -97,7 +97,7 @@ The Visbrain backend is a Flask-based API server that processes thinking text an
 
 ## Usage with Frontend
 
-The backend is designed to work with the visbrain-chatbot frontend. When users send messages through the chat interface:
+The backend is designed to work with the Thinking-graph chatbot frontend. When users send messages through the chat interface:
 
 1. Message is sent to `/api/process-thinking`
 2. Gemini AI analyzes the text structure

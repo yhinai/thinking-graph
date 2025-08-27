@@ -8,8 +8,8 @@ import google.generativeai as genai
 from datetime import datetime
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from parent directory
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 
 # Configure Gemini API
 gemini_api_key = os.getenv('GEMINI_API_KEY')

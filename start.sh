@@ -2,6 +2,15 @@
 
 echo "Starting Application..."
 
+# Load environment variables
+if [ -f .env ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+fi
+
+# Set default ports if not found in .env
+BACKEND_PORT=${BACKEND_PORT:-8000}
+FRONTEND_PORT=${FRONTEND_PORT:-3000}
+
 # Function to kill process on a specific port
 kill_port() {
     local port=$1
@@ -37,7 +46,7 @@ check_url() {
 
 # Function to check backend health specifically
 check_backend_health() {
-    local url="http://localhost:8000/health"
+    local url="http://localhost:$BACKEND_PORT/health"
     echo "Checking backend health..."
     
     if check_url "$url" 30; then
@@ -57,7 +66,7 @@ check_backend_health() {
 
 # Function to check frontend accessibility
 check_frontend_health() {
-    local url="http://localhost:3000"
+    local url="http://localhost:$FRONTEND_PORT"
     echo "Checking frontend accessibility..."
     
     if check_url "$url" 30; then
@@ -70,18 +79,18 @@ check_frontend_health() {
 }
 
 # Kill processes on required ports
-kill_port 3000
-kill_port 8000
+kill_port $FRONTEND_PORT
+kill_port $BACKEND_PORT
 
 echo ""
-echo "🔧 Starting Backend Server (Port 8000)..."
+echo "Starting Backend Server (Port $BACKEND_PORT)..."
 
 # Get the script directory
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Start backend server in background
+# Start backend server in background with clean environment
 cd "$SCRIPT_DIR/backend"
-python app.py &
+env -i PATH="$PATH" SHELL="$SHELL" python app.py &
 BACKEND_PID=$!
 
 # Wait for backend to start
@@ -96,7 +105,7 @@ if ! check_backend_health; then
 fi
 
 echo ""
-echo "🌐 Starting Frontend Server (Port 3000)..."
+echo "Starting Frontend Server (Port $FRONTEND_PORT)..."
 
 # Start frontend server in background  
 cd "$SCRIPT_DIR/frontend"
@@ -116,7 +125,7 @@ fi
 
 # Test API connectivity between frontend and backend
 echo "Testing API connectivity..."
-api_test=$(curl -s -X POST http://localhost:8000/api/chat \
+api_test=$(curl -s -X POST http://localhost:$BACKEND_PORT/api/chat \
     -H "Content-Type: application/json" \
     -d '{"message": "health check"}' \
     --max-time 10 2>/dev/null)
@@ -131,9 +140,9 @@ echo ""
 echo "Application Started Successfully!"
 echo ""
 echo "Access Points:"
-echo "   Frontend: http://localhost:3000"
-echo "   Backend:  http://localhost:8000"
-echo "   Health:   http://localhost:8000/health"
+echo "   Frontend: http://localhost:$FRONTEND_PORT"
+echo "   Backend:  http://localhost:$BACKEND_PORT"
+echo "   Health:   http://localhost:$BACKEND_PORT/health"
 echo ""
 echo "Process IDs:"
 echo "   Backend PID:  $BACKEND_PID"
