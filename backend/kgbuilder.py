@@ -413,8 +413,8 @@ class AgentThinkingKG:
                     OPTIONAL MATCH (s)-[:CONTAINS]->(t:Thought)
                     WITH s, count(t) as thought_count
                     RETURN s.id as session_id, s.reasoning_strategy as strategy,
-                           thought_count, s.timestamp as timestamp
-                    ORDER BY timestamp DESC
+                           thought_count, toString(s.timestamp) as timestamp
+                    ORDER BY s.timestamp DESC
                 """)
             return [record.data() for record in result]
 

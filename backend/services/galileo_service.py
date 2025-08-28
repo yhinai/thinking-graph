@@ -57,7 +57,11 @@ class GalileoService:
         self.galileo_logger = None
         self.galileo_enabled = False
         
-        if GALILEO_AVAILABLE and os.getenv("GALILEO_API_KEY"):
+        # Check if Galileo monitoring is explicitly enabled
+        monitoring_enabled = os.getenv("ENABLE_GALILEO_MONITORING", "true").lower() in ("true", "1", "yes")
+        has_api_key = bool(os.getenv("GALILEO_API_KEY"))
+        
+        if GALILEO_AVAILABLE and has_api_key and monitoring_enabled:
             try:
                 # Initialize Galileo logger with project and log stream
                 project = os.getenv("GALILEO_PROJECT", "vizbrain-thinking-graph")
@@ -73,8 +77,12 @@ class GalileoService:
                 logger.warning(f"⚠️ Galileo logger initialization failed: {e}")
                 logger.warning("⚠️ Continuing with basic evaluation")
                 self.galileo_enabled = False
+        elif not monitoring_enabled:
+            logger.info("ℹ️ Galileo monitoring disabled by configuration - using basic evaluation")
+        elif not has_api_key:
+            logger.info("ℹ️ Galileo API key not configured - using basic evaluation")
         else:
-            logger.info("ℹ️ Galileo not configured - using basic evaluation")
+            logger.info("ℹ️ Galileo SDK not available - using basic evaluation")
     
     def get_reasoning_response_with_evaluation(
         self, 

@@ -177,7 +177,7 @@ export function ForceGraph3D({
         const scene = Graph.scene();
         
         // Remove existing lights
-        scene.children = scene.children.filter(child => !(child instanceof THREE.Light));
+        scene.children = scene.children.filter((child: any) => !(child instanceof THREE.Light));
         
         // Add ambient light for overall illumination
         const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
@@ -221,14 +221,13 @@ export function ForceGraph3D({
           
           animationId = requestAnimationFrame(animateLights);
         };
-        animateLights();
-        
-        // Store animation ID for cleanup
+        // Start animation and store ID for cleanup
+        animationId = requestAnimationFrame(animateLights);
         (Graph as any).lightAnimationId = animationId;
         
         // Adjust force simulation for better spread
-        Graph.d3Force('charge').strength(-300);
-        Graph.d3Force('link').distance(80);
+        Graph.d3Force('charge')?.strength(-300);
+        Graph.d3Force('link')?.distance(80);
 
         // Set initial camera position
         Graph.cameraPosition({ x: 0, y: 0, z: 200 });

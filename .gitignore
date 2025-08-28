@@ -24,6 +24,9 @@ wheels/
 *.egg
 MANIFEST
 
+# Allow frontend lib directory (contains our custom TypeScript modules)
+!frontend/lib/
+
 # PyInstaller
 *.manifest
 *.spec
