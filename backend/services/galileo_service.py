@@ -53,17 +53,24 @@ class GalileoService:
             # Fallback initialization
             self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         
-        # Initialize Galileo if available
+        # Initialize Galileo logger if available
+        self.galileo_logger = None
         self.galileo_enabled = False
         
         if GALILEO_AVAILABLE and os.getenv("GALILEO_API_KEY"):
             try:
-                # Configure Galileo with API key
-                os.environ["GALILEO_API_KEY"] = os.getenv("GALILEO_API_KEY")
+                # Initialize Galileo logger with project and log stream
+                project = os.getenv("GALILEO_PROJECT", "vizbrain-thinking-graph")
+                log_stream = os.getenv("GALILEO_LOG_STREAM", "vizbrain-chat-logs")
+                
+                self.galileo_logger = galileo.GalileoLogger(
+                    project=project,
+                    log_stream=log_stream
+                )
                 self.galileo_enabled = True
-                logger.info("✅ Galileo configured successfully")
+                logger.info(f"✅ Galileo logger initialized for project '{project}' and stream '{log_stream}'")
             except Exception as e:
-                logger.warning(f"⚠️ Galileo configuration failed: {e}")
+                logger.warning(f"⚠️ Galileo logger initialization failed: {e}")
                 logger.warning("⚠️ Continuing with basic evaluation")
                 self.galileo_enabled = False
         else:
@@ -115,7 +122,7 @@ Format your response as follows:
         }
         
         # Try Galileo logging if available
-        if self.galileo_enabled:
+        if self.galileo_enabled and self.galileo_logger:
             try:
                 logger.info(f"📊 Running OpenAI call with Galileo logging for session {session_id}")
                 
@@ -127,13 +134,51 @@ Format your response as follows:
                     max_tokens=1200
                 )
                 
-                # Store response for potential future Galileo integration
+                # Log to Galileo using single LLM span trace
                 response_content = completion.choices[0].message.content
                 
-                # Modern Galileo SDK integration would use decorators
-                # For now, we'll mark as Galileo-ready and use self-evaluation
-                metadata["galileo_ready"] = True
-                logger.info(f"✅ Galileo-ready evaluation completed for session {session_id}")
+                try:
+                    logger.info(f"🔬 Starting Galileo logging for session {session_id}")
+                    
+                    # Create a trace with LLM span for Galileo
+                    trace = self.galileo_logger.start_trace(
+                        input=user_input,
+                        name=f"VizBrain Chat - {session_id[-8:]}"
+                    )
+                    logger.info(f"✅ Trace created with ID: {trace.id if hasattr(trace, 'id') else 'Unknown'}")
+                    
+                    # Add LLM span
+                    llm_span = self.galileo_logger.add_llm_span(
+                        input=user_input,
+                        output=response_content,
+                        model="gpt-3.5-turbo",
+                        temperature=0.7,
+                        num_input_tokens=completion.usage.prompt_tokens if completion.usage else None,
+                        num_output_tokens=completion.usage.completion_tokens if completion.usage else None,
+                        total_tokens=completion.usage.total_tokens if completion.usage else None
+                    )
+                    logger.info(f"✅ LLM span added")
+                    
+                    # Conclude the trace
+                    self.galileo_logger.conclude(output=response_content)
+                    logger.info(f"✅ Trace concluded")
+                    
+                    # Flush to send to Galileo
+                    logger.info(f"📤 Flushing to Galileo...")
+                    flush_result = self.galileo_logger.flush()
+                    logger.info(f"📤 Flush completed: {len(flush_result)} traces sent")
+                    
+                    metadata["galileo_logged"] = True
+                    metadata["galileo_trace_id"] = str(trace.id) if hasattr(trace, 'id') else None
+                    metadata["traces_sent"] = len(flush_result)
+                    logger.info(f"✅ Galileo logging completed: {len(flush_result)} traces sent for session {session_id}")
+                    
+                except Exception as log_error:
+                    logger.error(f"❌ Galileo logging failed: {log_error}")
+                    logger.error(f"❌ Error details: {type(log_error).__name__}: {str(log_error)}")
+                    import traceback
+                    logger.error(f"❌ Full traceback: {traceback.format_exc()}")
+                    metadata["galileo_logged"] = False
                 
             except Exception as e:
                 logger.warning(f"⚠️ Galileo evaluation failed: {e}")
