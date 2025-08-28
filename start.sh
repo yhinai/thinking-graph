@@ -130,10 +130,11 @@ api_test=$(curl -s -X POST http://localhost:$BACKEND_PORT/api/chat \
     -d '{"message": "health check"}' \
     --max-time 10 2>/dev/null)
 
-if echo "$api_test" | grep -q '"success"'; then
+if echo "$api_test" | grep -q '"success"\|"response"'; then
     echo "API connectivity verified"
 else
     echo "API connectivity test inconclusive (but servers are running)"
+    echo "Response received: $api_test"
 fi
 
 echo ""
