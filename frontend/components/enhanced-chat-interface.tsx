@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Send, Bot, User, Sparkles, AlertCircle, Plus, Trash2, ChevronLeft, ChevronRight, Brain } from "lucide-react"
-import { apiService } from "@/lib/api"
+import { apiService, EvaluationData } from "@/lib/api"
 
 interface Message {
   id: string
@@ -14,6 +14,7 @@ interface Message {
   role: "user" | "assistant"
   timestamp: Date
   sessionId?: string
+  evaluation?: EvaluationData
 }
 
 interface EnhancedChatInterfaceProps {
@@ -74,7 +75,8 @@ export function EnhancedChatInterface({ onGraphUpdate }: EnhancedChatInterfacePr
           content: result.response,
           role: "assistant",
           timestamp: new Date(),
-          sessionId: result.session_id
+          sessionId: result.session_id,
+          evaluation: result.evaluation
         }
         
         setMessages((prev) => [...prev, assistantMessage])
@@ -285,6 +287,33 @@ export function EnhancedChatInterface({ onGraphUpdate }: EnhancedChatInterfacePr
                         }`}>
                           <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
                           <p className="text-sm leading-relaxed relative z-10 whitespace-pre-wrap">{message.content}</p>
+                          
+                          {/* Simple Quality Indicator for Assistant Messages */}
+                          {message.role === "assistant" && message.evaluation && (
+                            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/10">
+                              {message.evaluation.galileo_enabled ? (
+                                <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded-full">
+                                  🔬 Galileo AI
+                                </span>
+                              ) : (
+                                <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-1 rounded-full">
+                                  📊 Basic
+                                </span>
+                              )}
+                              
+                              {message.evaluation.self_evaluation && (
+                                <span className={`text-xs px-2 py-1 rounded-full ${
+                                  message.evaluation.self_evaluation.estimated_quality === 'high' 
+                                    ? 'bg-green-500/20 text-green-300' 
+                                    : message.evaluation.self_evaluation.estimated_quality === 'medium'
+                                    ? 'bg-yellow-500/20 text-yellow-300'
+                                    : 'bg-gray-500/20 text-gray-300'
+                                }`}>
+                                  ⭐ {message.evaluation.self_evaluation.estimated_quality}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <span className="text-xs text-white/60 mt-2 font-medium">

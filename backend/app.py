@@ -4,7 +4,7 @@ import os
 import json
 from datetime import datetime
 from kgbuilder import AgentThinkingKG
-from agents.deepseek import get_reasoning_response
+from services.galileo_service import get_galileo_service
 from dotenv import load_dotenv
 
 # Load environment variables from parent directory
@@ -30,10 +30,15 @@ def init_kg_system():
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
+    # Get Galileo service health
+    galileo_service = get_galileo_service()
+    galileo_health = galileo_service.health_check()
+    
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
-        'kg_system_initialized': kg_system is not None
+        'kg_system_initialized': kg_system is not None,
+        'galileo_service': galileo_health
     })
 
 @app.route('/api/chat', methods=['POST'])
@@ -47,8 +52,11 @@ def chat_with_agent():
         if not user_message:
             return jsonify({'error': 'message is required'}), 400
         
-        # Get response from the agent
-        thoughts, response = get_reasoning_response(user_message)
+        # Get response from the agent with Galileo evaluation
+        galileo_service = get_galileo_service()
+        thoughts, response, evaluation_metadata = galileo_service.get_reasoning_response_with_evaluation(
+            user_message, session_id
+        )
         
         # Process the agent's thinking into the knowledge graph (if available)
         result_session_id = session_id
@@ -65,7 +73,15 @@ def chat_with_agent():
             'thoughts': thoughts,
             'response': response,
             'message': 'Chat processed successfully',
-            'kg_enabled': kg_system is not None
+            'kg_enabled': kg_system is not None,
+            'evaluation': {
+                'galileo_enabled': evaluation_metadata.get('galileo_enabled', False),
+                'evaluation_scores': evaluation_metadata.get('evaluation_scores', {}),
+                'evaluation_feedback': evaluation_metadata.get('evaluation_feedback', {}),
+                'self_evaluation': evaluation_metadata.get('self_evaluation', {}),
+                'galileo_trace_id': evaluation_metadata.get('galileo_trace_id'),
+                'service_version': evaluation_metadata.get('service_version', '1.0.0')
+            }
         })
         
     except Exception as e:

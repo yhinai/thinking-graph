@@ -5,3 +5,4 @@ google-generativeai==0.3.2
 python-dotenv==1.0.0
 openai==1.45.0
 waitress==3.0.2
+galileo>=1.16.0
