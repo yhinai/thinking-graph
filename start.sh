@@ -51,7 +51,7 @@ check_backend_health() {
     
     if check_url "$url" 30; then
         local response=$(curl -s "$url" 2>/dev/null)
-        if echo "$response" | grep -q '"status": "healthy"'; then
+        if echo "$response" | grep -q '"status":"healthy"'; then
             echo "Backend is healthy and responding"
             return 0
         else
@@ -88,9 +88,9 @@ echo "Starting Backend Server (Port $BACKEND_PORT)..."
 # Get the script directory
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Start backend server in background with clean environment
+# Start backend server in background
 cd "$SCRIPT_DIR/backend"
-env -i PATH="$PATH" SHELL="$SHELL" python app.py &
+python app.py &
 BACKEND_PID=$!
 
 # Wait for backend to start
