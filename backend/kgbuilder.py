@@ -7,6 +7,7 @@ from neo4j import GraphDatabase
 import google.generativeai as genai
 from datetime import datetime
 from dotenv import load_dotenv
+from services.enhanced_entity_extractor import entity_extractor
 
 # Load environment variables from parent directory
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
@@ -44,9 +45,10 @@ class ThinkingAnalyzer:
 
     def __init__(self):
         self.model = genai.GenerativeModel('gemini-2.0-flash')
+        self.advanced_extractor = entity_extractor
 
     def analyze_thinking_text(self, thinking_text: str) -> Dict[str, Any]:
-        """Use Gemini to analyze the thinking text and extract structured data"""
+        """Enhanced analysis with confidence scoring using both Gemini and advanced extraction"""
 
         prompt = f"""
         Analyze this agent thinking process and extract structured information:
@@ -88,6 +90,7 @@ class ThinkingAnalyzer:
         """
 
         try:
+            # Get basic analysis from Gemini
             response = self.model.generate_content(prompt)
             # Clean the response to extract JSON
             response_text = response.text.strip()
@@ -96,7 +99,12 @@ class ThinkingAnalyzer:
             elif response_text.startswith('```'):
                 response_text = response_text[3:-3]
 
-            return json.loads(response_text)
+            basic_analysis = json.loads(response_text)
+            
+            # Enhance with advanced entity extraction
+            enhanced_analysis = self._merge_analysis_results(basic_analysis, thinking_text)
+            return enhanced_analysis
+            
         except Exception as e:
             print(f"Error analyzing with Gemini: {e}")
             return self._fallback_analysis(thinking_text)
@@ -184,6 +192,56 @@ class ThinkingAnalyzer:
             tools.extend(re.findall(pattern, text, re.IGNORECASE))
 
         return list(set(tools))
+    
+    def _merge_analysis_results(self, basic_analysis: Dict[str, Any], thinking_text: str) -> Dict[str, Any]:
+        """Merge Gemini analysis with advanced entity extraction"""
+        
+        # Get enhanced entity extraction
+        enhanced_entities = self.advanced_extractor.extract_entities_with_confidence(thinking_text)
+        
+        # Enhance each thought with better entity extraction
+        enhanced_thoughts = []
+        for thought in basic_analysis.get('thoughts', []):
+            thought_content = thought.get('content', '')
+            
+            # Extract entities from this specific thought
+            thought_entities = self.advanced_extractor.extract_entities_with_confidence(thought_content)
+            
+            # Merge all entity types into a single list for backwards compatibility
+            all_entities = []
+            for category, entities in thought_entities['entities'].items():
+                if category == 'definitions':
+                    all_entities.extend(entities.keys())
+                elif isinstance(entities, list):
+                    all_entities.extend([entity['name'] for entity in entities])
+            
+            # Extract tools separately (maintaining existing format)
+            tools = []
+            if thought_entities['entities'].get('tools'):
+                tools = [tool['name'] for tool in thought_entities['entities']['tools']]
+            
+            # Enhance the thought with better entities and confidence
+            enhanced_thought = {
+                **thought,
+                'entities': list(set(thought.get('entities', []) + all_entities)),
+                'tools_mentioned': list(set(thought.get('tools_mentioned', []) + tools)),
+                'confidence': max(thought.get('confidence', 0.5), thought_entities['overall_confidence']),
+                'entity_confidence': thought_entities['overall_confidence'],
+                'entity_statistics': thought_entities.get('total_entities', 0)
+            }
+            enhanced_thoughts.append(enhanced_thought)
+        
+        # Add global entity statistics
+        enhanced_analysis = {
+            **basic_analysis,
+            'thoughts': enhanced_thoughts,
+            'global_entities': enhanced_entities['entities'],
+            'extraction_confidence': enhanced_entities['overall_confidence'],
+            'total_entities_extracted': enhanced_entities['total_entities'],
+            'extraction_timestamp': enhanced_entities['extraction_timestamp']
+        }
+        
+        return enhanced_analysis
 
 
 class KnowledgeGraphBuilder:

@@ -14,17 +14,32 @@ FRONTEND_PORT=${FRONTEND_PORT:-3000}
 # Function to kill process on a specific port
 kill_port() {
     local port=$1
-    echo "Checking for processes on port $port..."
+    echo "🔍 Checking for processes on port $port..."
     
-    # Find and kill process using the port
-    local pid=$(lsof -ti:$port)
-    if [ ! -z "$pid" ]; then
-        echo "💀 Killing process $pid on port $port..."
-        kill -9 $pid
-        sleep 2
-    else
-        echo "Port $port is free"
+    # Find and kill ALL processes using the port (more aggressive)
+    local pids=$(lsof -ti:$port)
+    if [ ! -z "$pids" ]; then
+        echo "💀 Force killing ALL processes on port $port: $pids"
+        echo "$pids" | xargs -r kill -9
+        sleep 3
+        
+        # Double check and force kill if still running
+        local remaining=$(lsof -ti:$port)
+        if [ ! -z "$remaining" ]; then
+            echo "⚠️  Processes still running, force killing: $remaining"
+            echo "$remaining" | xargs -r kill -9
+            sleep 2
+        fi
+        
+        # Verify port is actually free
+        local final_check=$(lsof -ti:$port)
+        if [ ! -z "$final_check" ]; then
+            echo "❌ Failed to free port $port, processes still running: $final_check"
+            return 1
+        fi
     fi
+    echo "✅ Port $port is now free"
+    return 0
 }
 
 # Function to check if a URL is accessible
@@ -78,9 +93,26 @@ check_frontend_health() {
     fi
 }
 
-# Kill processes on required ports
-kill_port $FRONTEND_PORT
-kill_port $BACKEND_PORT
+# Kill processes on required ports (force specific ports from .env)
+echo "🚀 Forcing exact ports from .env: Backend=$BACKEND_PORT, Frontend=$FRONTEND_PORT"
+
+# Kill ALL related processes first
+echo "🧹 Cleaning up any related processes..."
+pkill -f "python app.py" 2>/dev/null || true
+pkill -f "next dev" 2>/dev/null || true
+pkill -f "node.*next" 2>/dev/null || true
+sleep 2
+
+# Now kill specific ports
+if ! kill_port $FRONTEND_PORT; then
+    echo "❌ Failed to free frontend port $FRONTEND_PORT, exiting"
+    exit 1
+fi
+
+if ! kill_port $BACKEND_PORT; then
+    echo "❌ Failed to free backend port $BACKEND_PORT, exiting"
+    exit 1
+fi
 
 echo ""
 echo "Starting Backend Server (Port $BACKEND_PORT)..."
@@ -107,9 +139,10 @@ fi
 echo ""
 echo "Starting Frontend Server (Port $FRONTEND_PORT)..."
 
-# Start frontend server in background  
+# Start frontend server in background with forced port
 cd "$SCRIPT_DIR/frontend"
-npm run dev &
+echo "🚀 Starting Next.js on EXACT port $FRONTEND_PORT"
+PORT=$FRONTEND_PORT npm run dev &
 FRONTEND_PID=$!
 
 # Wait for frontend to start

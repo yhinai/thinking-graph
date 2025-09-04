@@ -83,6 +83,20 @@ class GalileoService:
             logger.info("ℹ️ Galileo API key not configured - using basic evaluation")
         else:
             logger.info("ℹ️ Galileo SDK not available - using basic evaluation")
+        
+        # Context service (will be set when KG system is available)
+        self.context_service = None
+    
+    def set_knowledge_graph(self, kg_system):
+        """Set the knowledge graph system for context-aware responses"""
+        if kg_system:
+            try:
+                from services.context_service import ContextService
+                self.context_service = ContextService(kg_system.kg_builder)
+                logger.info("✅ Context service initialized for context-aware conversations")
+            except Exception as e:
+                logger.warning(f"⚠️ Context service initialization failed: {e}")
+                self.context_service = None
     
     def get_reasoning_response_with_evaluation(
         self, 
@@ -105,17 +119,39 @@ class GalileoService:
         if not session_id:
             session_id = f"vizbrain_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         
-        # Standard system prompt for reasoning
-        system_prompt = """You are a reasoning agent that thinks step by step.
-Format your response as follows:
+        # Get context from knowledge graph if available
+        enhanced_prompt = user_input
+        context_metadata = {}
+        
+        if self.context_service and session_id:
+            try:
+                context = self.context_service.get_conversation_context(user_input, session_id)
+                enhanced_prompt = self.context_service.build_enhanced_prompt(user_input, context)
+                context_metadata = self.context_service.get_context_metadata(context)
+                logger.debug(f"Enhanced prompt with context: {context_metadata['used_context']}")
+            except Exception as e:
+                logger.warning(f"Context extraction failed: {e}")
+                context_metadata = {'used_context': False, 'context_error': str(e)}
+        
+        # Enhanced system prompt for context-aware reasoning
+        system_prompt = """You are a reasoning agent that thinks step by step and uses conversation context.
+
+When provided with context from previous conversations:
+1. Reference relevant previous discussions when helpful
+2. Build upon previously established knowledge
+3. Point out connections between current and past topics
+4. Avoid repeating information unnecessarily
+5. Use context to provide more insightful and personalized responses
+
+Format your response as:
 <think>
-[Your step-by-step reasoning process here]
+[Your step-by-step reasoning process, including how you're using context]
 </think>
-[Your final answer here]"""
+[Your final answer, naturally incorporating relevant context]"""
         
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_input}
+            {"role": "user", "content": enhanced_prompt}
         ]
         
         # Initialize metadata
@@ -126,7 +162,9 @@ Format your response as follows:
             "evaluation_scores": {},
             "evaluation_feedback": {},
             "galileo_trace_id": None,
-            "service_version": "1.0.0"
+            "service_version": "1.0.0",
+            "context_service_enabled": self.context_service is not None,
+            **context_metadata  # Include context metadata
         }
         
         # Try Galileo logging if available

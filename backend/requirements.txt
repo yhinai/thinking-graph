@@ -6,3 +6,12 @@ python-dotenv==1.0.0
 openai==1.45.0
 waitress==3.0.2
 galileo>=1.16.0
+redis>=4.5.0
+flask-socketio>=5.0.0
+python-socketio>=5.0.0
+psutil>=5.9.0
+scikit-learn>=1.3.0
+sentence-transformers>=2.2.2
+PyJWT>=2.8.0
+anthropic>=0.25.0
+httpx>=0.25.0

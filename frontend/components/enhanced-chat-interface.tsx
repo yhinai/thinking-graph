@@ -99,7 +99,7 @@ export function EnhancedChatInterface({ onGraphUpdate }: EnhancedChatInterfacePr
         
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
-          content: `I'm currently unable to connect to the AI backend. Error: ${backendError instanceof Error ? backendError.message : 'Unknown error'}. Please check if the thinking-graph server is running on port 5001.`,
+          content: `I'm currently unable to connect to the AI backend. Error: ${backendError instanceof Error ? backendError.message : 'Unknown error'}. Please check if the thinking-graph server is running on port 8000.`,
           role: "assistant",
           timestamp: new Date(),
         }

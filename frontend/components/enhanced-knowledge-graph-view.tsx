@@ -10,6 +10,9 @@ import {
   Settings, 
   Download, 
   RefreshCw, 
+  Search,
+  Clock,
+  Grid,
   Layers3, 
   Zap, 
   AlertCircle,
@@ -18,8 +21,6 @@ import {
   Users,
   Layers,
   Box,
-  Grid,
-  Clock,
   RotateCcw,
   Share2,
   Eye,
@@ -28,10 +29,16 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
-  Minimize2
+  Minimize2,
+  X
 } from "lucide-react"
 import { ForceGraph3D } from "./force-graph-3d"
 import { apiService, GraphData, GraphNode } from "@/lib/api"
+import { NodeDetailsPanel } from "./node-details-panel"
+import { GraphSearch } from "./graph-search"
+import { TimelineView } from "./visualization-modes/timeline-view"
+import { HierarchyView } from "./visualization-modes/hierarchy-view"
+import { MatrixView } from "./visualization-modes/matrix-view"
 
 export function EnhancedKnowledgeGraphView() {
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -40,6 +47,10 @@ export function EnhancedKnowledgeGraphView() {
   const [error, setError] = useState<string | null>(null)
   const [backendStatus, setBackendStatus] = useState<'connected' | 'disconnected' | 'unknown'>('unknown')
   const [selectedNode, setSelectedNode] = useState<number | null>(null)
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const [nodeDetailsOpen, setNodeDetailsOpen] = useState(false)
+  const [searchPanelOpen, setSearchPanelOpen] = useState(false)
+  const [currentVisualization, setCurrentVisualization] = useState<'force3d' | 'timeline' | 'hierarchy' | 'matrix'>('force3d')
   const [viewMode, setViewMode] = useState('3d-force')
   const [showControls, setShowControls] = useState(true)
   const [controlsExpanded, setControlsExpanded] = useState(true)
@@ -134,11 +145,45 @@ export function EnhancedKnowledgeGraphView() {
 
   const handleNodeClick = (node: GraphNode) => {
     console.log('Node clicked:', node)
-    // TODO: Implement node detail view
+    setSelectedNodeId(node.id)
+    setNodeDetailsOpen(true)
   }
 
   const handleRefresh = () => {
     loadGraphData()
+  }
+
+  const handleSearchResults = (results: any) => {
+    console.log('Search results:', results)
+    // Could implement highlighting of search results in the graph
+  }
+
+  const handleNodeSelect = (nodeId: string) => {
+    setSelectedNodeId(nodeId)
+    setNodeDetailsOpen(true)
+    setSearchPanelOpen(false)
+  }
+
+  const renderVisualization = () => {
+    const commonProps = { 
+      data: graphData, 
+      width: dimensions?.width || 800, 
+      height: dimensions?.height || 600,
+      onNodeSelect: handleNodeSelect
+    }
+    
+    switch (currentVisualization) {
+      case 'force3d':
+        return <ForceGraph3D {...commonProps} onNodeClick={handleNodeClick} />
+      case 'timeline':
+        return <TimelineView {...commonProps} />
+      case 'hierarchy':
+        return <HierarchyView {...commonProps} />
+      case 'matrix':
+        return <MatrixView {...commonProps} />
+      default:
+        return <ForceGraph3D {...commonProps} onNodeClick={handleNodeClick} />
+    }
   }
 
   const nodeTypeStats = useMemo(() => {
@@ -195,6 +240,41 @@ export function EnhancedKnowledgeGraphView() {
           </div>
 
           <div className="flex items-center gap-1 sm:gap-3">
+            {/* Visualization Mode Selector */}
+            <div className="flex items-center gap-1 bg-white/10 backdrop-blur-sm border border-white/20 rounded-md p-1">
+              {[
+                { id: 'force3d', name: '3D', icon: <Box className="w-4 h-4" />, title: '3D Force Graph' },
+                { id: 'timeline', name: 'Timeline', icon: <Clock className="w-4 h-4" />, title: 'Timeline View' },
+                { id: 'hierarchy', name: 'Tree', icon: <GitBranch className="w-4 h-4" />, title: 'Hierarchy View' },
+                { id: 'matrix', name: 'Matrix', icon: <Grid className="w-4 h-4" />, title: 'Matrix View' }
+              ].map((mode) => (
+                <Button
+                  key={mode.id}
+                  variant={currentVisualization === mode.id ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setCurrentVisualization(mode.id as any)}
+                  className={`h-8 px-2 ${
+                    currentVisualization === mode.id 
+                      ? 'bg-white/20 text-white' 
+                      : 'hover:bg-white/10 text-white/70'
+                  }`}
+                  title={mode.title}
+                >
+                  {mode.icon}
+                  <span className="hidden md:inline ml-1 text-xs">{mode.name}</span>
+                </Button>
+              ))}
+            </div>
+            
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setSearchPanelOpen(!searchPanelOpen)}
+              className="bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 shadow-lg"
+            >
+              <Search className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Search</span>
+            </Button>
             <Button variant="ghost" size="sm" className="hidden sm:flex bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 shadow-lg">
               <Download className="w-4 h-4 mr-2" />
               Export
@@ -475,14 +555,9 @@ export function EnhancedKnowledgeGraphView() {
         <div ref={graphContainerRef} className="absolute inset-0 z-5 w-full h-full">
           {backendStatus === 'connected' && graphData.nodes.length > 0 && dimensions && (
             <div className="w-full h-full isolate">
-                <ForceGraph3D
-                  data={graphData}
-                  width={dimensions.width}
-                  height={dimensions.height}
-                  onNodeClick={handleNodeClick}
-                />
-              </div>
-            )}
+              {renderVisualization()}
+            </div>
+          )}
         </div>
         
                 {/* Enhanced Glass overlay info - above graph but below controls */}
@@ -531,6 +606,31 @@ export function EnhancedKnowledgeGraphView() {
         </div>
         )}
       </div>
+
+      {/* Search Panel */}
+      {searchPanelOpen && (
+        <div className="fixed left-4 top-4 bottom-4 w-96 bg-white shadow-2xl rounded-lg border z-50 flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b">
+            <h2 className="font-semibold text-lg">Graph Search</h2>
+            <Button variant="ghost" size="sm" onClick={() => setSearchPanelOpen(false)}>
+              <X size={16} />
+            </Button>
+          </div>
+          <div className="flex-1 p-4">
+            <GraphSearch
+              onSearchResults={handleSearchResults}
+              onNodeSelect={handleNodeSelect}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Node Details Panel */}
+      <NodeDetailsPanel
+        nodeId={selectedNodeId}
+        isOpen={nodeDetailsOpen}
+        onClose={() => setNodeDetailsOpen(false)}
+      />
     </div>
   )
 }
